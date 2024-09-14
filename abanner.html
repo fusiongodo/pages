@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verbesserte Darstellung mit Vanilla JS Slider</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&family=Raleway:wght@300;400;500;600;700&family=Roboto:wght@100;200;300;400&family=Roboto+Flex:wght@100;200;300&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: "Raleway", sans-serif;
+    }
+
+    .slider-container {
+      position: relative;
+      overflow: hidden;
+      padding: 20px;
+    }
+
+    .slider-wrapper {
+      display: flex;
+      transition: transform 0.3s ease-in-out;
+    }
+
+    .slider-slide {
+      flex-shrink: 0;
+      width: auto;
+      max-width: 300px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      background-color: #f9f9f9;
+      padding: 20px;
+      border-radius: 8px;
+      margin-right: 30px; /* Space between slides */
+      min-width: 165px;
+    }
+
+    .img-wrapper1 {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 15px;
+    }
+
+    .img-wrapper1 img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .img-wrapper2 {
+      width: 110px;
+      height: 80px;
+      margin-bottom: 15px;
+    }
+
+    .img-wrapper2 img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .mybenefit-text {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 10px 0;
+      color: #333;
+    }
+
+    .slider-slide p {
+      font-size: 16px;
+      color: #666;
+    }
+
+    /* Navigation Buttons */
+    .slider-button {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background-color: transparent;
+      border: none;
+      font-size: 2rem;
+      cursor: pointer;
+      z-index: 10;
+      color: #333;
+      padding: 0 10px;
+    }
+
+    .prev-button {
+      left: 10px;
+    }
+
+    .next-button {
+      right: 10px;
+    }
+
+    /* Scrollbar */
+    .slider-scrollbar {
+      position: absolute;
+      bottom: 10px;
+      left: 20px;
+      right: 20px;
+      height: 4px;
+      background-color: #ccc;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .slider-scrollbar-thumb {
+      width: 0;
+      height: 100%;
+      background-color: #333;
+      transition: width 0.3s, transform 0.3s;
+      border-radius: 2px;
+    }
+
+    /* Responsive Styles */
+    @media (min-width: 990px) {
+      .slider-container {
+        overflow: visible;
+      }
+
+      .slider-wrapper {
+        justify-content: space-between;
+        align-items: flex-start;
+        transform: none !important;
+      }
+
+      .slider-slide {
+        margin-right: 0;
+      }
+
+      .slider-button,
+      .slider-scrollbar {
+        display: none;
+      }
+
+      .slider-slide:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        right: -15px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1px;
+        height: 80px;
+        background-color: #ccc;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="slider-container mybenefits">
+    <div class="slider-wrapper">
+      <div class="slider-slide mybenefit-card">
+        <div class="img-wrapper1">
+          <img src="anoun-lab-tested-5084411.svg" alt="Lab Icon">
+        </div>
+        <h3 class="mybenefit-text">Geprüfte Qualität</h3>
+        <p>Von zertifizierten Laboren in Deutschland geprüft.</p>
+      </div>
+
+      <div class="slider-slide mybenefit-card">
+        <div class="img-wrapper2">
+          <img src="adeal_offset16.svg" alt="Preis Icon">
+        </div>
+        <h3 class="mybenefit-text">Faire Preise</h3>
+        <p>Jeder hat Gesundheit verdient – transparente und faire Preisgestaltung.</p>
+      </div>
+
+      <div class="slider-slide mybenefit-card">
+        <div class="img-wrapper1">
+          <img src="anoun-parcel-7188008.svg" alt="Versand Icon">
+        </div>
+        <h3 class="mybenefit-text">Günstiger Versand</h3>
+        <p>Schneller und günstiger Versand innerhalb Deutschlands.</p>
+      </div>
+    </div>
+    <button class="slider-button prev-button" aria-label="Previous slide">‹</button>
+    <button class="slider-button next-button" aria-label="Next slide">›</button>
+    <div class="slider-scrollbar">
+      <div class="slider-scrollbar-thumb"></div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const sliderContainer = document.querySelector('.slider-container');
+      const sliderWrapper = document.querySelector('.slider-wrapper');
+      const slides = document.querySelectorAll('.slider-slide');
+      const prevButton = document.querySelector('.prev-button');
+      const nextButton = document.querySelector('.next-button');
+      const scrollbar = document.querySelector('.slider-scrollbar');
+      const scrollbarThumb = document.querySelector('.slider-scrollbar-thumb');
+      let currentIndex = 0;
+      let slideWidth = slides[0].offsetWidth + parseInt(getComputedStyle(slides[0]).marginRight);
+      let isDragging = false;
+      let startPos = 0;
+      let currentTranslate = 0;
+      let prevTranslate = 0;
+      let animationID;
+      let screenWidth = window.innerWidth;
+
+      function setSliderPosition() {
+        sliderWrapper.style.transform = `translateX(${currentTranslate}px)`;
+      }
+
+      function touchStart(index) {
+        return function(event) {
+          isDragging = true;
+          startPos = getPositionX(event);
+          animationID = requestAnimationFrame(animation);
+          sliderWrapper.classList.add('grabbing');
+        }
+      }
+
+      function touchMove(event) {
+        if (isDragging) {
+          const currentPosition = getPositionX(event);
+          currentTranslate = prevTranslate + currentPosition - startPos;
+        }
+      }
+
+      function touchEnd() {
+        cancelAnimationFrame(animationID);
+        isDragging = false;
+        const movedBy = currentTranslate - prevTranslate;
+
+        if (movedBy < -50 && currentIndex < slides.length - 1) currentIndex += 1;
+        if (movedBy > 50 && currentIndex > 0) currentIndex -= 1;
+
+        setPositionByIndex();
+        sliderWrapper.classList.remove('grabbing');
+      }
+
+      function getPositionX(event) {
+        return event.type.includes('mouse') ? event.pageX : event.touches[0].clientX;
+      }
+
+      function animation() {
+        setSliderPosition();
+        if (isDragging) requestAnimationFrame(animation);
+      }
+
+      function setPositionByIndex() {
+        currentTranslate = -currentIndex * slideWidth;
+        prevTranslate = currentTranslate;
+        setSliderPosition();
+        updateScrollbar();
+      }
+
+      // Navigation Buttons
+      nextButton.addEventListener('click', function () {
+        if (currentIndex < slides.length - 1) {
+          currentIndex++;
+          setPositionByIndex();
+        }
+      });
+
+      prevButton.addEventListener('click', function () {
+        if (currentIndex > 0) {
+          currentIndex--;
+          setPositionByIndex();
+        }
+      });
+
+      // Scrollbar
+      function updateScrollbar() {
+        const totalScrollWidth = (slides.length * slideWidth) - sliderContainer.offsetWidth;
+        const scrollPercentage = -currentTranslate / totalScrollWidth;
+        const thumbWidth = (sliderContainer.offsetWidth / (slides.length * slideWidth)) * scrollbar.offsetWidth;
+        scrollbarThumb.style.width = `${thumbWidth}px`;
+        scrollbarThumb.style.transform = `translateX(${scrollPercentage * (scrollbar.offsetWidth - thumbWidth)}px)`;
+      }
+
+      // Initialize Scrollbar
+      updateScrollbar();
+
+      // Touch Events
+      slides.forEach((slide, index) => {
+        const slideImage = slide.querySelector('img');
+        // Disable default image drag
+        if (slideImage) {
+          slideImage.addEventListener('dragstart', (e) => e.preventDefault());
+        }
+        // Touch events
+        slide.addEventListener('touchstart', touchStart(index));
+        slide.addEventListener('touchend', touchEnd);
+        slide.addEventListener('touchmove', touchMove);
+        // Mouse events
+        slide.addEventListener('mousedown', touchStart(index));
+        slide.addEventListener('mouseup', touchEnd);
+        slide.addEventListener('mouseleave', () => {
+          if (isDragging) touchEnd();
+        });
+        slide.addEventListener('mousemove', touchMove);
+      });
+
+      // Resize Event
+      window.addEventListener('resize', function () {
+        screenWidth = window.innerWidth;
+        slideWidth = slides[0].offsetWidth + parseInt(getComputedStyle(slides[0]).marginRight);
+        setPositionByIndex();
+      });
+    });
+  </script>
+</body>
+</html>
